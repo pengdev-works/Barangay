@@ -1,5 +1,5 @@
-const VERCEL_JSON = {
+{
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
-};
+}

@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS residents (
   suffix VARCHAR(20),
   gender VARCHAR(20) CHECK (gender IN ('Male','Female','Other')),
   birth_date DATE,
-  age INTEGER GENERATED ALWAYS AS (EXTRACT(YEAR FROM age(birth_date))::INTEGER) STORED,
+  age INTEGER,
   civil_status VARCHAR(30) CHECK (civil_status IN ('Single','Married','Widowed','Separated','Annulled')),
   address TEXT NOT NULL,
   purok VARCHAR(100),
