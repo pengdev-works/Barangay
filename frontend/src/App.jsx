@@ -6,46 +6,85 @@ import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 
+// Public pages
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import VerifyCertificatePage from './pages/certificates/VerifyCertificatePage';
+
+// Core pages
 import DashboardPage from './pages/DashboardPage';
 import ResidentsPage from './pages/residents/ResidentsPage';
+import HouseholdsPage from './pages/households/HouseholdsPage';
 import CertificatesPage from './pages/certificates/CertificatesPage';
+import ComplaintsPage from './pages/complaints/ComplaintsPage';
+import BlotterPage from './pages/blotter/BlotterPage';
 import AnnouncementsPage from './pages/announcements/AnnouncementsPage';
+import EventsPage from './pages/events/EventsPage';
+import HealthPage from './pages/health/HealthPage';
+import AssistancePage from './pages/assistance/AssistancePage';
+import ReportsPage from './pages/reports/ReportsPage';
+import AuditPage from './pages/audit/AuditPage';
+import UsersPage from './pages/users/UsersPage';
+import SettingsPage from './pages/settings/SettingsPage';
 
 function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
         <BrowserRouter>
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: { borderRadius: '12px', fontSize: '14px' },
+              success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+              error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            }}
+          />
           <Routes>
-            {/* Public Routes */}
+            {/* Public */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/verify-certificate/:id" element={<VerifyCertificatePage />} />
 
-            {/* Protected App Routes */}
+            {/* All Roles */}
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/residents" element={<ResidentsPage />} />
-                <Route path="/certificates" element={<CertificatesPage />} />
                 <Route path="/announcements" element={<AnnouncementsPage />} />
-                
-                {/* Fallback routes redirecting to dashboard */}
-                <Route path="/households" element={<DashboardPage />} />
-                <Route path="/complaints" element={<DashboardPage />} />
-                <Route path="/blotter" element={<DashboardPage />} />
-                <Route path="/events" element={<DashboardPage />} />
-                <Route path="/health" element={<DashboardPage />} />
-                <Route path="/assistance" element={<DashboardPage />} />
-                <Route path="/reports" element={<DashboardPage />} />
-                <Route path="/audit" element={<DashboardPage />} />
-                <Route path="/settings" element={<DashboardPage />} />
+                <Route path="/events" element={<EventsPage />} />
+                <Route path="/certificates" element={<CertificatesPage />} />
+                <Route path="/complaints" element={<ComplaintsPage />} />
+                <Route path="/assistance" element={<AssistancePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Route>
 
-            {/* Catch-all redirect */}
+            {/* Staff and above */}
+            <Route element={<ProtectedRoute allowedRoles={['Super Admin', 'Barangay Captain', 'Barangay Staff']} />}>
+              <Route element={<MainLayout />}>
+                <Route path="/residents" element={<ResidentsPage />} />
+                <Route path="/households" element={<HouseholdsPage />} />
+                <Route path="/blotter" element={<BlotterPage />} />
+                <Route path="/health" element={<HealthPage />} />
+              </Route>
+            </Route>
+
+            {/* Captain and above */}
+            <Route element={<ProtectedRoute allowedRoles={['Super Admin', 'Barangay Captain']} />}>
+              <Route element={<MainLayout />}>
+                <Route path="/reports" element={<ReportsPage />} />
+              </Route>
+            </Route>
+
+            {/* Super Admin only */}
+            <Route element={<ProtectedRoute allowedRoles={['Super Admin']} />}>
+              <Route element={<MainLayout />}>
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/audit" element={<AuditPage />} />
+              </Route>
+            </Route>
+
+            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

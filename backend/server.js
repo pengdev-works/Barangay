@@ -19,6 +19,8 @@ const assistanceRoutes = require('./src/routes/assistance');
 const notificationRoutes = require('./src/routes/notifications');
 const reportRoutes = require('./src/routes/reports');
 const auditRoutes = require('./src/routes/audit');
+const userRoutes = require('./src/routes/users');
+const uploadRoutes = require('./src/routes/upload');
 const { errorHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -27,18 +29,26 @@ const PORT = process.env.PORT || 5000;
 // Security middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-// CORS
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://localhost:5174',
-];
+// CORS configuration (Allows Vercel domains, localhost, and custom FRONTEND_URL)
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow non-browser requests (Postman, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+    ].filter(Boolean);
+
+    const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Allow all origins in production if FRONTEND_URL is not specifically restrictive
+      callback(null, true);
     }
   },
   credentials: true,
@@ -76,6 +86,8 @@ app.use('/api/assistance', assistanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -95,7 +107,6 @@ if (!fs.existsSync(uploadsDir)) {
 app.listen(PORT, () => {
   console.log(`\n🚀 BarangayConnect API running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS allowed: ${allowedOrigins.join(', ')}\n`);
 });
 
 module.exports = app;

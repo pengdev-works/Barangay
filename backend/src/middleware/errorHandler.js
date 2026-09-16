@@ -1,5 +1,5 @@
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('API Error:', err);
 
   // Multer errors
   if (err.code === 'LIMIT_FILE_SIZE') {
@@ -19,12 +19,12 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ success: false, message: 'Referenced record not found' });
   }
 
-  // Default
+  // Default error response
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
     message: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    details: err.detail || null,
   });
 };
 

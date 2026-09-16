@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { authorizeMinRole } = require('../middleware/rbac');
 const upload = require('../middleware/upload');
 
+router.get('/public', getAnnouncements);
 router.get('/', authenticate, getAnnouncements);
 router.get('/:id', authenticate, getAnnouncementById);
 router.post('/', authenticate, authorizeMinRole('Barangay Staff'), upload.array('images', 5), createAnnouncement);

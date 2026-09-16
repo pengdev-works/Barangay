@@ -1,22 +1,28 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const connectionString = process.env.DATABASE_URL;
+
+// Neon PostgreSQL requires SSL
+const isNeon = connectionString && (connectionString.includes('neon.tech') || connectionString.includes('sslmode=require'));
+const isProduction = process.env.NODE_ENV === 'production';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: (isNeon || isProduction || connectionString) ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // 10s timeout for Neon serverless cold starts
 });
 
 pool.on('connect', () => {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('✅ Connected to Neon PostgreSQL database');
+    console.log('✅ Connected to PostgreSQL database');
   }
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Database pool error:', err);
+  console.error('❌ Database pool error:', err.message);
 });
 
 const query = async (text, params) => {

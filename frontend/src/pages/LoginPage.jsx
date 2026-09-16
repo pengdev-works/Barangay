@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Building2, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -26,21 +26,16 @@ const LoginPage = () => {
     }
   };
 
-  const handleQuickLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 py-12 selection:bg-brand-500 selection:text-white">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-500 text-white shadow-xl shadow-brand-500/30 mb-4">
-            <Building2 className="w-8 h-8" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white shadow-xl shadow-brand-500/30 mb-4 overflow-hidden border-4 border-brand-400/30">
+            <img src="/lapaz-logo.png" alt="Brgy. La Paz Logo" className="w-full h-full object-cover" />
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">BarangayConnect</h2>
-          <p className="text-sm text-slate-400 mt-1">Smart Barangay Management System</p>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Brgy. La Paz</h2>
+          <p className="text-sm text-slate-400 mt-1">Municipality of La Paz, Province of Abra</p>
         </div>
 
         {/* Card */}
@@ -97,45 +92,6 @@ const LoginPage = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Logins */}
-          <div className="mt-8 pt-6 border-t border-slate-700/60">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Demo Credentials</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@barangayconnect.com', 'Admin@123')}
-                className="p-2 text-left bg-slate-900/40 hover:bg-slate-900 border border-slate-700/40 rounded-xl text-xs text-slate-300 transition-colors"
-              >
-                <span className="font-semibold block text-brand-400">Super Admin</span>
-                <span className="text-[10px] text-slate-500">Full System Control</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('captain@barangayconnect.com', 'Admin@123')}
-                className="p-2 text-left bg-slate-900/40 hover:bg-slate-900 border border-slate-700/40 rounded-xl text-xs text-slate-300 transition-colors"
-              >
-                <span className="font-semibold block text-emerald-400">Captain</span>
-                <span className="text-[10px] text-slate-500">Approvals & Analytics</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('staff1@barangayconnect.com', 'Admin@123')}
-                className="p-2 text-left bg-slate-900/40 hover:bg-slate-900 border border-slate-700/40 rounded-xl text-xs text-slate-300 transition-colors"
-              >
-                <span className="font-semibold block text-amber-400">Staff</span>
-                <span className="text-[10px] text-slate-500">Residents & Processing</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('resident1@barangayconnect.com', 'Admin@123')}
-                className="p-2 text-left bg-slate-900/40 hover:bg-slate-900 border border-slate-700/40 rounded-xl text-xs text-slate-300 transition-colors"
-              >
-                <span className="font-semibold block text-indigo-400">Resident</span>
-                <span className="text-[10px] text-slate-500">Requests & Complaints</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -143,3 +99,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

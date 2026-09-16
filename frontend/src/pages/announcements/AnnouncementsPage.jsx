@@ -6,7 +6,11 @@ import { Plus, Search, Megaphone, Heart, MessageSquare, ThumbsUp } from 'lucide-
 import toast from 'react-hot-toast';
 import { formatDate } from '../../utils/formatters';
 
+import { useAuth } from '../../context/AuthContext';
+
 const AnnouncementsPage = () => {
+  const { user } = useAuth();
+  const isStaff = user && user.role !== 'Resident';
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,12 +68,14 @@ const AnnouncementsPage = () => {
           <h1 className="text-2xl font-bold text-slate-900">Announcements & Community News</h1>
           <p className="text-sm text-slate-500">Official updates, health advisories, and barangay news</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-semibold text-sm shadow-md shadow-brand-600/20 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Create Announcement
-        </button>
+        {isStaff && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-semibold text-sm shadow-md shadow-brand-600/20 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Create Announcement
+          </button>
+        )}
       </div>
 
       {/* Feed */}

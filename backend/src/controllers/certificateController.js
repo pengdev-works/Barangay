@@ -1,5 +1,6 @@
 const { query } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
+const { sendSMS } = require('../utils/smsService');
 
 const getCertificates = async (req, res, next) => {
   try {
@@ -8,6 +9,12 @@ const getCertificates = async (req, res, next) => {
     const conditions = [];
     const params = [];
     let p = 1;
+
+    if (req.user.role_name === 'Resident') {
+      conditions.push(`(cr.requested_by = $${p} OR cr.resident_id IN (SELECT id FROM residents WHERE email = $${p + 1}))`);
+      params.push(req.user.id, req.user.email);
+      p += 2;
+    }
 
     if (search) {
       conditions.push(`(r.first_name ILIKE $${p} OR r.last_name ILIKE $${p})`);
@@ -21,7 +28,8 @@ const getCertificates = async (req, res, next) => {
 
     const result = await query(
       `SELECT cr.*,
-              CONCAT(r.first_name,' ',r.last_name) as resident_name, r.address as resident_address,
+              COALESCE(CONCAT(r.first_name,' ',r.last_name), CONCAT(u.first_name,' ',u.last_name)) as resident_name,
+              r.address as resident_address,
               CONCAT(u.first_name,' ',u.last_name) as requested_by_name,
               CONCAT(a.first_name,' ',a.last_name) as approved_by_name
        FROM certificate_requests cr
@@ -44,7 +52,17 @@ const getCertificates = async (req, res, next) => {
 
 const createCertificate = async (req, res, next) => {
   try {
-    const { resident_id, certificate_type, purpose, amount } = req.body;
+    let { resident_id, certificate_type, purpose, amount } = req.body;
+
+    if (!resident_id || req.user.role_name === 'Resident') {
+      const resMatch = await query('SELECT id FROM residents WHERE email = $1', [req.user.email]);
+      if (resMatch.rows[0]) {
+        resident_id = resMatch.rows[0].id;
+      } else {
+        resident_id = null;
+      }
+    }
+
     const result = await query(
       `INSERT INTO certificate_requests (resident_id, requested_by, certificate_type, purpose, amount)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
@@ -91,16 +109,29 @@ const updateCertificateStatus = async (req, res, next) => {
 
     const result = await query(queryText, params);
 
-    // Notify resident if they have a user account
-    const residentUser = await query(
-      `SELECT u.id FROM users u JOIN residents r ON u.email = r.email WHERE r.id = $1`,
+    // Notify resident if they have a user account or contact number
+    const residentInfo = await query(
+      `SELECT r.contact_number, r.first_name, u.id as user_id 
+       FROM residents r 
+       LEFT JOIN users u ON r.email = u.email 
+       WHERE r.id = $1`,
       [old.rows[0].resident_id]
     );
-    if (residentUser.rows[0]) {
-      await query(
-        `INSERT INTO notifications (user_id, title, message, type, reference_type, reference_id) VALUES ($1,$2,$3,$4,$5,$6)`,
-        [residentUser.rows[0].id, 'Certificate Request Update', `Your ${old.rows[0].certificate_type} request is now ${status}.`, status === 'Approved' ? 'success' : status === 'Rejected' ? 'error' : 'info', 'certificate_request', id]
-      );
+
+    if (residentInfo.rows[0]) {
+      const { user_id, contact_number, first_name } = residentInfo.rows[0];
+      
+      if (user_id) {
+        await query(
+          `INSERT INTO notifications (user_id, title, message, type, reference_type, reference_id) VALUES ($1,$2,$3,$4,$5,$6)`,
+          [user_id, 'Certificate Request Update', `Your ${old.rows[0].certificate_type} request is now ${status}.`, status === 'Approved' ? 'success' : status === 'Rejected' ? 'error' : 'info', 'certificate_request', id]
+        );
+      }
+
+      if (contact_number && (status === 'Approved' || status === 'Released')) {
+        const smsMsg = `Hello ${first_name}, your ${old.rows[0].certificate_type} request has been ${status}. Please visit Barangay Hall for pickup. - BrgyConnect`;
+        sendSMS(contact_number, smsMsg);
+      }
     }
 
     await logAudit({ userId: req.user.id, action: `UPDATE_CERTIFICATE_STATUS_${status.toUpperCase()}`, tableName: 'certificate_requests', recordId: id, oldValues: old.rows[0], newValues: result.rows[0], req });
@@ -115,4 +146,30 @@ const deleteCertificate = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getCertificates, createCertificate, updateCertificateStatus, deleteCertificate };
+const getCertificateById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      `SELECT cr.*, 
+              COALESCE(CONCAT(r.first_name,' ',r.last_name), CONCAT(u.first_name,' ',u.last_name)) as resident_name,
+              r.address as resident_address,
+              r.purok as resident_purok,
+              CONCAT(a.first_name,' ',a.last_name) as approved_by_name
+       FROM certificate_requests cr
+       LEFT JOIN residents r ON cr.resident_id = r.id
+       LEFT JOIN users u ON cr.requested_by = u.id
+       LEFT JOIN users a ON cr.approved_by = a.id
+       WHERE cr.id = $1`,
+      [id]
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Certificate record not found or invalid QR code' });
+    }
+
+    res.json({ success: true, certificate: result.rows[0] });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getCertificates, createCertificate, updateCertificateStatus, deleteCertificate, getCertificateById };
+

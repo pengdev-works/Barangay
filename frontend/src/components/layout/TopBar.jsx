@@ -19,9 +19,12 @@ const TopBar = ({ onMenuClick }) => {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <div>
-          <h2 className="text-sm font-semibold text-slate-800">Barangay San Jose Portal</h2>
-          <p className="text-xs text-slate-500 hidden sm:block">Smart Community Management System</p>
+        <div className="flex items-center gap-3">
+          <img src="/lapaz-logo.png" alt="La Paz" className="w-8 h-8 rounded-full object-cover border border-slate-200 shadow-sm hidden sm:block" />
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">Barangay La Paz Portal</h2>
+            <p className="text-xs text-slate-500 hidden sm:block">Municipality of La Paz, Province of Abra</p>
+          </div>
         </div>
       </div>
 

@@ -8,6 +8,13 @@ const getAssistance = async (req, res, next) => {
     const conditions = [];
     const params = [];
     let p = 1;
+
+    if (req.user.role_name === 'Resident') {
+      conditions.push(`ar.resident_id IN (SELECT id FROM residents WHERE email = $${p})`);
+      params.push(req.user.email);
+      p++;
+    }
+
     if (status) { conditions.push(`ar.status = $${p++}`); params.push(status); }
     if (type) { conditions.push(`ar.assistance_type = $${p++}`); params.push(type); }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -27,8 +34,15 @@ const getAssistance = async (req, res, next) => {
 
 const createAssistance = async (req, res, next) => {
   try {
-    const { resident_id, assistance_type, description, amount_requested } = req.body;
+    let { resident_id, assistance_type, description, amount_requested } = req.body;
     const docs = req.files ? req.files.map(f => `/uploads/${f.filename}`) : [];
+
+    if (!resident_id || req.user.role_name === 'Resident') {
+      const resMatch = await query('SELECT id FROM residents WHERE email = $1', [req.user.email]);
+      if (resMatch.rows[0]) resident_id = resMatch.rows[0].id;
+      else resident_id = null;
+    }
+
     const result = await query(
       `INSERT INTO assistance_requests (resident_id, assistance_type, description, amount_requested, supporting_documents) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
       [resident_id, assistance_type, description, amount_requested || null, JSON.stringify(docs)]

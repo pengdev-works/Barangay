@@ -5,8 +5,11 @@ import Modal from '../../components/ui/Modal';
 import { Plus, Search, CheckCircle, XCircle, FileText, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate } from '../../utils/formatters';
+import { generateCertificatePDF } from '../../utils/pdfGenerator';
+import { useAuth } from '../../context/AuthContext';
 
 const CertificatesPage = () => {
+  const { user } = useAuth();
   const [certificates, setCertificates] = useState([]);
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +29,7 @@ const CertificatesPage = () => {
       setLoading(true);
       const res = await api.get('/certificates', { params: { search, status: statusFilter } });
       if (res.data.success) {
-        setCertificates(res.data.certificates);
+        setCertificates(res.data.certificates || []);
       }
     } catch (err) {
       toast.error('Failed to fetch certificates');
@@ -36,9 +39,10 @@ const CertificatesPage = () => {
   };
 
   const fetchResidents = async () => {
+    if (user?.role === 'Resident') return;
     try {
       const res = await api.get('/residents', { params: { limit: 100 } });
-      if (res.data.success) setResidents(res.data.residents);
+      if (res.data.success) setResidents(res.data.residents || []);
     } catch (err) {
       console.error(err);
     }
@@ -47,7 +51,7 @@ const CertificatesPage = () => {
   useEffect(() => {
     fetchCertificates();
     fetchResidents();
-  }, [search, statusFilter]);
+  }, [search, statusFilter, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,6 +65,8 @@ const CertificatesPage = () => {
     }
   };
 
+  const isStaff = user && user.role !== 'Resident';
+
   const handleUpdateStatus = async (id, status) => {
     try {
       await api.put(`/certificates/${id}/status`, { status });
@@ -68,6 +74,16 @@ const CertificatesPage = () => {
       fetchCertificates();
     } catch (err) {
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleDownloadPDF = async (cert) => {
+    try {
+      toast.loading('Generating official certificate PDF...', { id: 'pdf-toast' });
+      await generateCertificatePDF(cert);
+      toast.success('Certificate PDF generated successfully!', { id: 'pdf-toast' });
+    } catch (err) {
+      toast.error('Failed to generate PDF', { id: 'pdf-toast' });
     }
   };
 
@@ -144,7 +160,7 @@ const CertificatesPage = () => {
                     <td className="p-4"><StatusBadge status={c.status} /></td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {c.status === 'Pending' && (
+                        {isStaff && c.status === 'Pending' && (
                           <>
                             <button
                               onClick={() => handleUpdateStatus(c.id, 'Approved')}
@@ -160,13 +176,21 @@ const CertificatesPage = () => {
                             </button>
                           </>
                         )}
-                        {c.status === 'Approved' && (
+                        {(c.status === 'Approved' || c.status === 'Released') && (
                           <button
-                            onClick={() => handleUpdateStatus(c.id, 'Released')}
+                            onClick={async () => {
+                              if (isStaff && c.status === 'Approved') {
+                                await handleUpdateStatus(c.id, 'Released');
+                              }
+                              handleDownloadPDF(c);
+                            }}
                             className="px-2.5 py-1 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg flex items-center gap-1"
                           >
-                            <Download className="w-3.5 h-3.5" /> Release PDF
+                            <Download className="w-3.5 h-3.5" /> {c.status === 'Approved' ? 'Release & Print PDF' : 'Download PDF'}
                           </button>
+                        )}
+                        {!isStaff && c.status === 'Pending' && (
+                          <span className="text-xs text-slate-400 italic">Processing</span>
                         )}
                       </div>
                     </td>
@@ -181,20 +205,28 @@ const CertificatesPage = () => {
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Certificate Request">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Select Resident *</label>
-            <select
-              required
-              value={formData.resident_id}
-              onChange={(e) => setFormData({ ...formData, resident_id: e.target.value })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-            >
-              <option value="">-- Choose Resident --</option>
-              {residents.map((r) => (
-                <option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>
-              ))}
-            </select>
-          </div>
+          {user?.role === 'Resident' ? (
+            <div className="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+              <label className="block text-xs font-semibold text-brand-800 mb-1">Applicant Name</label>
+              <p className="text-sm font-bold text-brand-900">{user?.firstName} {user?.lastName}</p>
+              <p className="text-xs text-brand-600">{user?.email}</p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Select Resident *</label>
+              <select
+                required
+                value={formData.resident_id}
+                onChange={(e) => setFormData({ ...formData, resident_id: e.target.value })}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+              >
+                <option value="">-- Choose Resident --</option>
+                {residents.map((r) => (
+                  <option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Certificate Type *</label>
             <select

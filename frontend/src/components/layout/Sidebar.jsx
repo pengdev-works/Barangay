@@ -15,7 +15,7 @@ import {
   BarChart3,
   ShieldAlert,
   Settings,
-  Building2
+  UserPlus
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -33,6 +33,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: 'Health Monitoring', href: '/health', icon: Heart, roles: ['Super Admin', 'Barangay Captain', 'Barangay Staff'] },
     { name: 'Emergency Assistance', href: '/assistance', icon: HandHeart, roles: ['Super Admin', 'Barangay Captain', 'Barangay Staff', 'Resident'] },
     { name: 'Reports & Analytics', href: '/reports', icon: BarChart3, roles: ['Super Admin', 'Barangay Captain'] },
+    { name: 'User Management', href: '/users', icon: UserPlus, roles: ['Super Admin'] },
     { name: 'Audit Trail', href: '/audit', icon: ShieldAlert, roles: ['Super Admin'] },
     { name: 'Settings', href: '/settings', icon: Settings, roles: ['Super Admin', 'Barangay Captain', 'Barangay Staff', 'Resident'] },
   ];
@@ -44,12 +45,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       <div className="flex h-full flex-col justify-between">
         <div className="px-4 py-6">
           <div className="flex items-center gap-3 px-3 py-2 mb-6">
-            <div className="bg-brand-500 text-white p-2 rounded-xl shadow-lg shadow-brand-500/30">
-              <Building2 className="w-6 h-6" />
-            </div>
+            <img
+              src="/lapaz-logo.png"
+              alt="La Paz Logo"
+              className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-brand-400/40 shadow-md"
+            />
             <div>
-              <h1 className="font-bold text-lg text-white leading-none">BarangayConnect</h1>
-              <span className="text-xs text-brand-400 font-medium">Smart Governance</span>
+              <h1 className="font-bold text-base text-white leading-none">Brgy. La Paz</h1>
+              <span className="text-xs text-brand-400 font-medium">Province of Abra</span>
             </div>
           </div>
 

@@ -5,7 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { authorizeMinRole } = require('../middleware/rbac');
 const upload = require('../middleware/upload');
 
-router.get('/', authenticate, authorizeMinRole('Barangay Staff'), getAssistance);
+router.get('/', authenticate, getAssistance);
 router.post('/', authenticate, upload.array('documents', 5), createAssistance);
 router.put('/:id/status', authenticate, authorizeMinRole('Barangay Captain'), updateAssistanceStatus);
 

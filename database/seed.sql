@@ -32,7 +32,7 @@ INSERT INTO users (
   'System',
   'Administrator',
   'admin@barangayconnect.com',
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhuW',
+  '$2a$10$yBKup/JB5JH.DMIMusXtK.PSMSjJEgMaa1u09mO8BahfQ1I2EKg/e',
   '09000000000',
   TRUE
 ) ON CONFLICT (email) DO NOTHING;

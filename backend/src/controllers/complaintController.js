@@ -9,6 +9,12 @@ const getComplaints = async (req, res, next) => {
     const params = [];
     let p = 1;
 
+    if (req.user.role_name === 'Resident') {
+      conditions.push(`(c.reported_by = $${p} OR c.complainant_id IN (SELECT id FROM residents WHERE email = $${p + 1}))`);
+      params.push(req.user.id, req.user.email);
+      p += 2;
+    }
+
     if (search) { conditions.push(`(c.title ILIKE $${p} OR c.description ILIKE $${p})`); params.push(`%${search}%`); p++; }
     if (status) { conditions.push(`c.status = $${p++}`); params.push(status); }
     if (category) { conditions.push(`c.category = $${p++}`); params.push(category); }
@@ -17,10 +23,11 @@ const getComplaints = async (req, res, next) => {
     const count = await query(`SELECT COUNT(*) FROM complaints c ${where}`, params);
     const result = await query(
       `SELECT c.*,
-              CONCAT(r.first_name,' ',r.last_name) as complainant_name,
+              COALESCE(CONCAT(r.first_name,' ',r.last_name), CONCAT(u.first_name,' ',u.last_name)) as complainant_name,
               CONCAT(a.first_name,' ',a.last_name) as assigned_to_name
        FROM complaints c
        LEFT JOIN residents r ON c.complainant_id = r.id
+       LEFT JOIN users u ON c.reported_by = u.id
        LEFT JOIN users a ON c.assigned_to = a.id
        ${where}
        ORDER BY c.created_at DESC
@@ -34,8 +41,14 @@ const getComplaints = async (req, res, next) => {
 
 const createComplaint = async (req, res, next) => {
   try {
-    const { complainant_id, title, description, category, location, incident_date } = req.body;
+    let { complainant_id, title, description, category, location, incident_date } = req.body;
     const evidence_urls = req.files ? req.files.map(f => `/uploads/${f.filename}`) : [];
+
+    if (!complainant_id || req.user.role_name === 'Resident') {
+      const resMatch = await query('SELECT id FROM residents WHERE email = $1', [req.user.email]);
+      if (resMatch.rows[0]) complainant_id = resMatch.rows[0].id;
+      else complainant_id = null;
+    }
 
     const result = await query(
       `INSERT INTO complaints (complainant_id, reported_by, title, description, category, location, incident_date, evidence_urls)
